@@ -1,0 +1,3 @@
+# Supply Chain Control Tower - Environment Config
+# API URL for the FastAPI backend (default: localhost:8000)
+REACT_APP_API_URL=http://localhost:8000/api
