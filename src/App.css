@@ -89,13 +89,19 @@
 }
 
 .sidebar-close {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
+}
+
+.sidebar-close:hover {
+  color: var(--text-primary);
 }
 
 .sidebar-close:hover { color: var(--text-primary); }
@@ -508,4 +514,10 @@
   .grid-4 { grid-template-columns: 1fr 1fr; }
   .header-breadcrumb .breadcrumb-root { display: none; }
   .header-breadcrumb .breadcrumb-sep { display: none; }
+}
+
+@media (min-width: 901px) {
+  .sidebar:not(.sidebar-open) {
+    display: none;
+  }
 }

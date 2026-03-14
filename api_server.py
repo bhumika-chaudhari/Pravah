@@ -670,8 +670,83 @@ def get_network_data():
 
 
 # ══════════════════════════════════════════════════════
-# DECISION UPDATE  →  PUT /api/decisions/{id}
+# SHIPMENTS  →  /api/shipments
 # ══════════════════════════════════════════════════════
+
+def _make_shipment_timeline(ts, eta, status):
+    # Basic timeline steps (demo-style; can be replaced with real event stream)
+    if not ts:
+        ts = datetime.now().isoformat()
+    if not eta:
+        eta = ts
+
+    timeline = [
+        {"stage": "Order Placed", "time": ts},
+        {"stage": "Packed", "time": ts},
+        {"stage": "Dispatched", "time": ts},
+        {"stage": "In Transit", "time": ts},
+    ]
+
+    if eta:
+        timeline.append({"stage": "Warehouse Arrival", "time": eta})
+    if status == 'delivered':
+        timeline.append({"stage": "Delivered", "time": eta})
+
+    return timeline
+
+
+@app.get("/api/shipments")
+@app.get("/api/shipments/tracking")
+def get_shipments():
+    conn = get_db()
+    try:
+        if not table_exists(conn, "shipments"):
+            return []
+
+        rows = conn.execute("""
+            SELECT
+                shipment_id, component, supplier_name, origin_country,
+                expected_delivery, actual_delay_days, status, cost_inr,
+                timestamp
+            FROM shipments
+            ORDER BY timestamp DESC
+            LIMIT 200
+        """).fetchall()
+
+        shipments = []
+        for r in rows:
+            status = r["status"] or "unknown"
+            amount = r["cost_inr"] or 0
+            paid = round(amount * 0.6)
+            payment_status = "paid" if status == "delivered" else "partial"
+
+            shipments.append({
+                "id": r["shipment_id"],
+                "component": r["component"],
+                "supplier": r["supplier_name"],
+                "destination": "Pune Factory",
+                "status": status,
+                "driver": "Rajesh Kumar",
+                "contact": "+91 9876543210",
+                "vehicle": "MH12AB4567",
+                "eta": r["expected_delivery"],
+                "payment_status": payment_status,
+                "amount": amount,
+                "paid": paid,
+                "timeline": _make_shipment_timeline(r["timestamp"], r["expected_delivery"], status),
+            })
+
+        return shipments
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+# ══════════════════════════════════════════════════════
+# DECISION UPDATE  →  PUT /api/decisions/{id}
+# ══════════════════════════════════════════════
 
 @app.put("/api/decisions/{decision_id}")
 def update_decision(decision_id: int, body: dict):

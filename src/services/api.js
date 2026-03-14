@@ -58,3 +58,8 @@ export const blockchainAPI = {
 export const mapAPI = {
   getNetwork: () => request('/map/network'),
 };
+
+// ─── Shipments / Tracking ─────────────────────
+export const shipmentAPI = {
+  getAll: () => request('/shipments'),
+};

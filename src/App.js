@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Activity, Cpu, Link2, ChevronRight, Radio, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Map, Activity, Cpu, Link2, ChevronRight, Radio, Menu, X, Truck } from 'lucide-react';
 import DashboardPage from './pages/DashboardPage';
 import SupplyChainMap from './pages/SupplyChainMap';
 import AnomalyTimeline from './pages/AnomalyTimeline';
 import DecisionEngine from './pages/DecisionEngine';
 import BlockchainLog from './pages/BlockchainLog';
+import ShipmentTracker from './pages/ShipmentTracker';
 import './App.css';
 
 const NAV_ITEMS = [
   { path: '/',           label: 'Control Tower',  icon: LayoutDashboard, subtitle: 'Overview' },
   { path: '/map',        label: 'Network Map',     icon: Map,             subtitle: 'Geo Nodes' },
+  { path: '/shipments',  label: 'Shipment Tracker',icon: Truck,           subtitle: 'Live Tracking' },
   { path: '/timeline',   label: 'Anomaly Feed',    icon: Activity,        subtitle: 'Detection' },
   { path: '/decisions',  label: 'AI Engine',       icon: Cpu,             subtitle: 'Decisions' },
   { path: '/blockchain', label: 'Audit Chain',     icon: Link2,           subtitle: 'Ledger' },
@@ -43,8 +45,7 @@ function Sidebar({ open, onClose }) {
             <Radio size={18} />
           </div>
           <div className="logo-text">
-            <span className="logo-title">CTRL TOWER</span>
-            <span className="logo-sub">Supply Chain OS v2.4</span>
+            <span className="logo-title">Pravah</span>
           </div>
           <button className="sidebar-close" onClick={onClose}>
             <X size={16} />
@@ -141,11 +142,12 @@ function AppLayout() {
       <div className="grid-bg" />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="app-main">
-        <Header onMenuClick={() => setSidebarOpen(true)} currentPath={location.pathname} />
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} currentPath={location.pathname} />
         <main className="app-content">
           <Routes>
             <Route path="/"           element={<DashboardPage />} />
             <Route path="/map"        element={<SupplyChainMap />} />
+            <Route path="/shipments"  element={<ShipmentTracker />} />
             <Route path="/timeline"   element={<AnomalyTimeline />} />
             <Route path="/decisions"  element={<DecisionEngine />} />
             <Route path="/blockchain" element={<BlockchainLog />} />
