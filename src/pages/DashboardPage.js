@@ -112,31 +112,23 @@ export default function DashboardPage() {
   const [error, setError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Simulated time-series for chart (since backend gives current snapshot only)
-  const [chartData] = useState(() => {
-    const hours = Array.from({ length: 12 }, (_, i) => {
-      const h = (new Date().getHours() - 11 + i + 24) % 24;
-      return {
-        time: `${String(h).padStart(2,'0')}:00`,
-        alerts: Math.floor(Math.random() * 8) + 1,
-        resolved: Math.floor(Math.random() * 6),
-      };
-    });
-    return hours;
-  });
+  // Chart data from backend
+  const [chartData, setChartData] = useState([]);
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [m, a, d] = await Promise.all([
+      const [m, a, d, c] = await Promise.all([
         dashboardAPI.getMetrics(),
         dashboardAPI.getAlerts(),
         dashboardAPI.getDecisions(),
+        dashboardAPI.getChartData(),
       ]);
       setMetrics(m);
       setAlerts(Array.isArray(a) ? a : []);
       setDecisions(Array.isArray(d) ? d : []);
+      setChartData(Array.isArray(c) ? c : []);
       setLastRefresh(new Date());
     } catch (err) {
       setError(err.message || 'Failed to connect to API. Ensure the FastAPI server is running on port 8000.');
@@ -177,9 +169,9 @@ export default function DashboardPage() {
       {/* ── Page Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="section-title">SUPPLY CHAIN CONTROL TOWER</h1>
+          <h1 className="section-title">{metrics?.title || 'SUPPLY CHAIN CONTROL TOWER'}</h1>
           <div className="section-subtitle">
-            PUNE AUTONOMOUS SUPPLY CHAIN · REAL-TIME INTELLIGENCE
+            {metrics?.subtitle || 'PUNE AUTONOMOUS SUPPLY CHAIN · REAL-TIME INTELLIGENCE'}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -200,8 +192,8 @@ export default function DashboardPage() {
           sub={`${alerts.filter(a=>a.severity==='critical').length} critical`}
           icon={AlertTriangle}
           color="red"
-          trend="-12% vs yesterday"
-          trendUp={false}
+          trend={metrics?.active_alerts_trend}
+          trendUp={metrics?.active_alerts_trend_up}
         />
         <MetricCard
           label="Active Anomalies"
@@ -209,8 +201,8 @@ export default function DashboardPage() {
           sub="Under investigation"
           icon={Activity}
           color="amber"
-          trend="+5 this hour"
-          trendUp={true}
+          trend={metrics?.active_anomalies_trend}
+          trendUp={metrics?.active_anomalies_trend_up}
         />
         <MetricCard
           label="Resolved Today"
@@ -218,8 +210,8 @@ export default function DashboardPage() {
           sub="Auto + manual"
           icon={CheckCircle}
           color="green"
-          trend="+25% efficiency"
-          trendUp={true}
+          trend={metrics?.resolved_today_trend}
+          trendUp={metrics?.resolved_today_trend_up}
         />
         <MetricCard
           label="Avg Resolution"
@@ -227,8 +219,6 @@ export default function DashboardPage() {
           sub="Mean time to resolve"
           icon={Clock}
           color="cyan"
-          trend="-8% faster"
-          trendUp={false}
         />
       </div>
 
@@ -237,8 +227,8 @@ export default function DashboardPage() {
         <div className="card" style={{ padding: 20 }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="card-title">ALERT ACTIVITY</div>
-              <div className="card-sub">Last 12 hours · Auto-refreshes every 30s</div>
+              <div className="card-title">{metrics?.alert_activity_title || 'ALERT ACTIVITY'}</div>
+              <div className="card-sub">{metrics?.alert_activity_sub || 'Last 12 hours · Auto-refreshes every 30s'}</div>
             </div>
             <span className="chip chip-medium">LIVE</span>
           </div>
@@ -266,23 +256,23 @@ export default function DashboardPage() {
         </div>
 
         <div className="card" style={{ padding: 20 }}>
-          <div className="card-title mb-4">SYSTEM HEALTH</div>
+          <div className="card-title mb-4">{metrics?.system_health_title || 'SYSTEM HEALTH'}</div>
           <div className="flex flex-col gap-4">
-            <HealthBar label="Inventory Levels"    value={metrics?.inventory_levels}    color="green" />
-            <HealthBar label="Supplier Reliability" value={metrics?.supplier_reliability} color="cyan" />
-            <HealthBar label="On-Time Delivery"    value={metrics?.on_time_delivery}    color="amber" />
+            <HealthBar label={metrics?.inventory_levels_label || "Inventory Levels"}    value={metrics?.inventory_levels}    color="green" />
+            <HealthBar label={metrics?.supplier_reliability_label || "Supplier Reliability"} value={metrics?.supplier_reliability} color="cyan" />
+            <HealthBar label={metrics?.on_time_delivery_label || "On-Time Delivery"}    value={metrics?.on_time_delivery}    color="amber" />
           </div>
 
           <div className="health-stats-grid">
             <div className="health-stat">
               <Package size={18} color="var(--cyan)" />
               <span className="health-stat-val">{fmt(metrics?.inventory_levels, '%')}</span>
-              <span className="health-stat-label">Inventory</span>
+              <span className="health-stat-label">{metrics?.inventory_stat_label || 'Inventory'}</span>
             </div>
             <div className="health-stat">
               <Truck size={18} color="var(--green)" />
               <span className="health-stat-val">{fmt(metrics?.on_time_delivery, '%')}</span>
-              <span className="health-stat-label">On-Time</span>
+              <span className="health-stat-label">{metrics?.on_time_stat_label || 'On-Time'}</span>
             </div>
           </div>
         </div>
@@ -294,7 +284,7 @@ export default function DashboardPage() {
         <div className="card" style={{ padding: 20 }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="card-title">ACTIVE ALERTS</div>
+              <div className="card-title">{metrics?.active_alerts_title || 'ACTIVE ALERTS'}</div>
               <div className="card-sub">{alerts.length} total · {criticalAlerts.length} high-priority</div>
             </div>
             <span className={`chip ${alerts.length > 0 ? 'chip-critical' : 'chip-resolved'}`}>
@@ -319,7 +309,7 @@ export default function DashboardPage() {
         <div className="card" style={{ padding: 20 }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="card-title">AI DECISIONS</div>
+              <div className="card-title">{metrics?.ai_decisions_title || 'AI DECISIONS'}</div>
               <div className="card-sub">{decisions.length} in queue</div>
             </div>
             <span className={`chip ${decisions.length > 0 ? 'chip-pending' : 'chip-resolved'}`}>

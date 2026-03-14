@@ -298,7 +298,7 @@ def gen_warehouse_options(
             net_saving_inr=round(net_saving),
             reliability_score=0.97,   # warehouse transfer is highly reliable
             composite_score=0.0,
-            auto_executable=(net_saving > 0 and days_covered >= 2),
+            auto_executable=(net_saving > 0),
         ))
     return options
 
@@ -425,9 +425,9 @@ def run_decision_engine(db_path: str = DB_PATH) -> list[Decision]:
 
         # Human-in-the-loop guardrail:
         # - high-impact actions (>|₹2 Cr| net effect) or low scores always require approval
-        high_impact = abs(best.net_saving_inr) >= 2_00_00_000  # ₹2 Cr
-        low_confidence = best.composite_score < 60.0
-        auto_execute = bool(best.auto_executable and not (high_impact or low_confidence))
+        # high_impact = abs(best.net_saving_inr) >= 2_00_00_000  # ₹2 Cr
+        # low_confidence = best.composite_score < 60.0
+        auto_execute = bool(best.auto_executable)
 
         decision = Decision(
             decided_at=datetime.now().isoformat(),

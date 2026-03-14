@@ -24,6 +24,7 @@ export const dashboardAPI = {
   getMetrics: () => request('/dashboard/metrics'),
   getAlerts:  () => request('/alerts/active'),
   getDecisions: () => request('/decisions/pending'),
+  getChartData: () => request('/dashboard/chart'),
 };
 
 // ─── Anomalies ───────────────────────────────

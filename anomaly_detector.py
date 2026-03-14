@@ -858,10 +858,14 @@ def run_self_healing_loop(db_path: str = DB_PATH):
         """
     )
 
-    # Load open alerts (not yet closed)
+    # Load open alerts that have auto-approved decisions
     alerts_df = pd.read_sql(
-        "SELECT * FROM anomaly_alerts "
-        "WHERE alert_status IS NULL OR alert_status != 'closed'",
+        """
+        SELECT aa.* FROM anomaly_alerts aa
+        JOIN decisions d ON aa.id = d.alert_id
+        WHERE (aa.alert_status IS NULL OR aa.alert_status != 'closed')
+        AND d.auto_execute = 1
+        """,
         conn,
     )
 
@@ -1032,10 +1036,10 @@ def run_detection(db_path: str = DB_PATH) -> list[AnomalyAlert]:
         print(f"[Detector] Map generation failed: {e}")
 
     # Phase 5: run autonomous self-healing loop
-    try:
-        run_self_healing_loop(db_path=db_path)
-    except Exception as e:
-        print(f"[Detector] Self-healing loop failed: {e}")
+    # try:
+    #     run_self_healing_loop(db_path=db_path)
+    # except Exception as e:
+    #     print(f"[Detector] Self-healing loop failed: {e}")
 
     return all_alerts
 
